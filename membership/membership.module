@@ -1,0 +1,242 @@
+<?php
+/*******************************************************
+ * Copyright (C) 2014 Armel Koudoum <dev.goldprint@gmail.com>
+ * 
+ * This file is part of Jungle Lion.
+ * 
+ * Jungle Lion can not be copied and/or distributed in any way without the express
+ * permission of Armel Koudoum
+ *******************************************************/
+
+/**
+ * Implement hook_menu()
+ */
+function membership_menu() {
+    $items["admin/config/membership"] = array(
+        "title" => "Signup configuration form",
+        "title callback" => "membership_form_title",
+        "description" => "Configure member signup form",
+        "position" => "right",
+        "weight" => -5,
+        "page callback" => "system_admin_menu_block_page",
+        "access arguments" =>  array("administer site configuration"),
+        "file" => "system.admin.inc",
+        "file path" => drupal_get_path("module", "system"),
+    );
+
+    $items["admin/config/membership/formsettings"] = array(
+        "title" => "Manage signup form",
+        "title callback" => "membership_configform_title",
+        "description" => "Add/Remove fields on signup form",
+        "page callback" => "drupal_get_form",
+        "page arguments" => array("membership_admin_settings"),
+        "access arguments" =>  array("administer site configuration"),
+        "type" => MENU_NORMAL_ITEM,
+        "file" => "membership.admin.inc",
+
+    );
+
+    $items["admin/membership"] = array(
+        "title" => "Membership",
+        "title callback" => "membership_field_list_title",
+        "description" => "Manage fields list",
+        "page callback" => "drupal_get_form",
+        "page arguments" => array("membership_admin_fieldslist"),
+        "access arguments" =>  array("administer site configuration"),
+        "file" => "membership.fieldlist.inc",
+
+    );
+
+    $items["membership/%signupfields/edit"] = array(
+        "title" => "Edit",
+        'page callback' => 'drupal_get_form',
+        "page arguments" => array("membership_signupfields_edit", 1),
+        "description" => "Manage fields list",
+        "access arguments" =>  array("administer site configuration"),
+        "type" => MENU_LOCAL_TASK,
+        "file" => "membership.editfield.inc",
+
+    );
+    //
+    $items["membership/movefield/%/%/%"] = array(
+        "title" => "Signup fields list",
+        "description" => "Form fields ordering",
+        "page callback" => "membership_movefield_ordering",
+        "page arguments" => array(2, 3, 4),
+        "access arguments" =>  array("administer site configuration"),
+        "type" => MENU_LOCAL_TASK,
+        "file" => "membership.fieldlist.inc",
+
+    );
+
+    //
+    $items["membership/changestate/%/%/%"] = array(
+        "title" => "Signup fields list",
+        "description" => "enable or disable field for signup",
+        "page callback" => "membership_field_activation",
+        "page arguments" => array(2, 3, 4),
+        "access arguments" =>  array("administer site configuration"),
+        "type" => MENU_LOCAL_TASK,
+        "file" => "membership.fieldlist.inc",
+
+    );
+
+    return $items;
+}
+
+function membership_form_title() {
+    return t("Signup configuration form");
+}
+
+function membership_configform_title() {
+    return t("Manage signup form");
+}
+
+function membership_field_edit_title() {
+    return t('Edit');
+}
+function membership_field_list_title() {
+    return t('Membership');
+}
+
+function signupfields_load($fid) {
+    $query = db_select('jl_signupfields', 'f');
+    //$result = db_query("SELECT * FROM {jl_signupfields} WHERE field_id = :field_id", array( ':field_id' => $fid ));
+    $query 
+    ->condition('field_id', $fid)
+    ->fields('f', array('field_id', 'field_label', 'field_iden', 'field_type', 'actif_signup','actif_profile','actif_order')); 
+    $result = $query->execute(); 
+
+    foreach ($result as $row) { 
+        if(isset($row->field_id) && $row->field_id==$fid){
+            return $row; 
+        }
+    } 
+    return null;
+}
+/*
+function location_state_load($state, $field, $loc) {
+    echo $state.$field.$loc;
+    die();
+}
+*/
+function membership_field_activation($field, $state, $loc){
+    $num_updated = db_update('jl_signupfields') 
+        ->fields(array( 
+        'actif_'.$loc => ($state==0?1:0), 
+        )) 
+        ->condition('field_id', $field, '=') 
+        ->execute(); 
+
+    drupal_goto("admin/membersh");
+}
+
+function membership_movefield_ordering($field, $direction, $w) {
+    if($direction == "up") {
+
+
+        $num_updated = db_update('jl_signupfields') 
+            ->fields(array( 
+            'field_weight' => ($w), 
+            )) 
+            ->condition('field_weight', $w-1, '=') 
+            ->execute(); 
+
+        $num_updated = db_update('jl_signupfields') 
+            ->fields(array( 
+            'field_weight' => ($w-1), 
+            )) 
+            ->condition('field_id', $field, '=') 
+            ->execute(); 
+
+    } else {
+         $num_updated = db_update('jl_signupfields') 
+            ->fields(array( 
+            'field_weight' => ($w), 
+            )) 
+            ->condition('field_weight', $field+1, '=') 
+            ->execute();   
+
+         $num_updated = db_update('jl_signupfields') 
+            ->fields(array( 
+            'field_weight' => ($w+1), 
+            )) 
+            ->condition('field_id', $field, '=') 
+            ->execute();    
+    }
+
+    drupal_goto("admin/membersh");
+}
+/**
+ * Implement hook_form_alter()
+ */
+
+
+function membership_form_user_register_form_alter(&$form, &$form_state, $form_id) {
+   
+
+    //check to see if the form is the registration form
+    if(!($form_id=="user_register_form"))
+        return;
+    
+    $form["#validate"][] = "membership_form_user_register_validate";
+    $form['#submit'][] = 'membership_form_user_register_submit';
+    /*
+    foreach($form['#submit'] as $k => $v)
+        if($v == 'user_register_submit')
+            $form['#submit'][$k ] = 'membership_form_user_register_submit';
+    */
+        
+    //add field firstname and lastname to the user registration form
+    $query = db_select('jl_signupfields', 's');
+
+    $query
+    ->fields('s', array('field_id', 'field_label', 'field_desc', 'field_iden', 'field_type', 'actif_signup','actif_profile','actif_order','field_weight'))
+     ->condition('actif_signup', 1, '=')
+    ->orderBy('field_weight', 'ASC');
+    
+    $result = $query->execute();
+    $fieldtype = array('Text field' => "textfield", 'Radio button' => "radios", 'Dropdown Select' => "select", 'Check boxes' => "checkboxes", 'Textarea' => "textarea",);
+    foreach($result as $field) {
+
+        $form[$field->field_iden] = array(
+            "#type" => $fieldtype[$field->field_type],
+            "#title" => $field->field_label,
+            "#description" => $field->field_desc,
+            "#weight" => $field->field_weight,
+        );  
+    }
+    
+
+    $form['name']["#weight"] = 4;
+    $form['mail']["#weight"] = 3;
+
+
+    $form['cpwd'] = array(
+        "#type" => "password_confirm",
+        "#title" => t("Your password"),
+        "#description" => t("Please enter your first name"),
+        "#required" => TRUE,
+        "#weight" => 5,
+    );
+
+
+    return $form;
+}
+
+
+function membership_form_user_register_validate($form, &$form_state) {
+    
+    $lname = $form_state["values"]["last_name"];
+    if(empty($lname))
+        form_set_error("last_name", t('You must enter your last name.'));
+}
+
+function membership_form_user_register_submit($form, &$form_state) {
+    $user = $form_state['user'];
+    $uid = $user->uid;
+}
+
+/*
+ [uid] => 11 [hostname] => 192.168.56.1 [roles] => Array ( [2] => authenticated user ) [cache] => 0 [administer_users] => [name] => ali [mail] => ali@ross.com [status] => [notify] => 0 [timezone] => America/New_York [signature] => [picture] => [picture_delete] => 0 [picture_upload] => [last_name] => koun [first_name] => alfa [cpwd] => gold1985 [signature_format] => filtered_html [pass] => $S$DKYf1qUUvMXWnptpTKQJ1ZQfOGh0po3VljkpLkJcZfpnixYqJiD. [init] => ali@ross.com [created] => 1396025313 [theme] => [access] => 0 [login] => 0 [language] => [password] => 829Wg9DudL
+*/

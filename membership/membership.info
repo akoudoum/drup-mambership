@@ -1,0 +1,9 @@
+name = membership
+description = "Add custom fields to user signup form."
+package = Goldprint Drupal
+core = 7.x
+files[] = membership.module
+files[] = membership.install
+files[] = membership.admin.inc
+configure = admin/config/membership/settings
+php = 5.2
