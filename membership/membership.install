@@ -283,6 +283,7 @@ function membership_install() {
 				'actif_signup' => 1,
 				'actif_profile' => 1,
 				'actif_order' => 1,
+        'required_field' => 1,
 				'created' => time(),
 				'updated' => time(),
 			))->execute();
@@ -300,6 +301,7 @@ function membership_install() {
         'actif_signup' => 1,
         'actif_profile' => 1,
         'actif_order' => 1,
+        'required_field' => 0,
         'created' => time(),
         'updated' => time(),
       ))->execute();
@@ -318,6 +320,7 @@ function membership_install() {
       'actif_signup' => 1,
       'actif_profile' => 1,
       'actif_order' => 1,
+      'required_field' => 1,
       'created' => time(),
       'updated' => time(),
     ))
@@ -337,6 +340,8 @@ function membership_install() {
       'actif_signup' => 1,
       'actif_profile' => 1,
       'actif_order' => 1,
+      'required_field' => 1,
+      'required_field' => 0,
       'created' => time(),
       'updated' => time(),
     ))
@@ -356,6 +361,7 @@ function membership_install() {
       'actif_signup' => 1,
       'actif_profile' => 1,
       'actif_order' => 1,
+      'required_field' => 0,
       'created' => time(),
       'updated' => time(),
     ))
@@ -375,6 +381,7 @@ function membership_install() {
       'actif_signup' => 1,
       'actif_profile' => 1,
       'actif_order' => 1,
+      'required_field' => 0,
       'created' => time(),
       'updated' => time(),
     ))
@@ -394,6 +401,7 @@ function membership_install() {
       'actif_signup' => 1,
       'actif_profile' => 1,
       'actif_order' => 1,
+      'required_field' => 0,
       'created' => time(),
       'updated' => time(),
     ))
@@ -413,6 +421,7 @@ function membership_install() {
       'actif_signup' => 1,
       'actif_profile' => 1,
       'actif_order' => 1,
+      'required_field' => 0,
       'created' => time(),
       'updated' => time(),
     ))
@@ -432,6 +441,7 @@ function membership_install() {
       'actif_signup' => 1,
       'actif_profile' => 1,
       'actif_order' => 1,
+      'required_field' => 0,
       'created' => time(),
       'updated' => time(),
     ))
@@ -451,6 +461,7 @@ function membership_install() {
       'actif_signup' => 1,
       'actif_profile' => 1,
       'actif_order' => 1,
+      'required_field' => 0,
       'created' => time(),
       'updated' => time(),
     ))
@@ -470,6 +481,7 @@ function membership_install() {
       'actif_signup' => 1,
       'actif_profile' => 1,
       'actif_order' => 1,
+      'required_field' => 0,
       'created' => time(),
       'updated' => time(),
     ))
@@ -547,6 +559,12 @@ function membership_schema() {
 				'size' => 'tiny',
 				'not null' => TRUE,
 	        ),
+      'required_field' => array(
+        'description' => 'Is this field active on order form',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => FALSE,
+        ),
         'field_weight' => array(
         'description' => 'field weight',
         'type' => 'int',

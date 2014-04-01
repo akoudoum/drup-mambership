@@ -273,6 +273,12 @@ function membership_admin_settings_validate($form, &$form_state) {
 				$form_state["field_option"] = $option_values_cbox;
 
 			break;
+		case 'Text field':
+			$form_state["field_option"] = $form_state['values']['maxlenght'];
+			break;
+		case 'Textarea': 
+			$form_state["field_option"] = $form_state['values']['maxlenght'].",".$form_state["rows"] = $form_state['values']['cols'];;
+			break;
 	}
 
 }

@@ -69,6 +69,16 @@ function membership_menu() {
 
     );
 
+    $items["membership/setrequired/%/%"] = array(
+        "title" => "Set field as required",
+        "description" => "Set form field as required",
+        "page callback" => "membership_setrequired",
+        "page arguments" => array(2,3),
+        "access arguments" =>  array("administer site configuration"),
+        "type" => MENU_LOCAL_TASK,
+        "file" => "membership.fieldlist.inc",
+
+    );
     //
     $items["membership/changestate/%/%/%"] = array(
         "title" => "Signup fields list",
@@ -198,13 +208,52 @@ function membership_form_user_register_form_alter(&$form, &$form_state, $form_id
     $result = $query->execute();
     $fieldtype = array('Text field' => "textfield", 'Radio button' => "radios", 'Dropdown Select' => "select", 'Check boxes' => "checkboxes", 'Textarea' => "textarea",);
     foreach($result as $field) {
-
-        $form[$field->field_iden] = array(
+       $form[$field->field_iden] = array(
             "#type" => $fieldtype[$field->field_type],
             "#title" => $field->field_label,
             "#description" => $field->field_desc,
             "#weight" => $field->field_weight,
         );  
+        switch ($field->field_type) {
+            case 'Text field':
+                if (!empty($field->field_option) && is_numeric($field->field_option))
+                    $form[$field->field_iden]['#maxlength']=$field->field_option;
+                break;
+             case 'Radio button':
+                $form[$field->field_iden]['#options'] = drupal_map_assoc(explode(",", $field->field_option));
+                break;
+            case 'Dropdown Select':
+                if($field->field_iden == 'country') {
+                    $cptions = array();
+                    $q = db_select('jl_countries', 'c');
+                    $q->fields('c', array('name', 'iso_alpha3'))
+                        ->orderBy('name', 'ASC');
+                        
+                    $res = $q->execute();
+                    foreach($res as $r) 
+                        $cptions[$r->iso_alpha3] = $r->name;
+
+                    $form[$field->field_iden]['#options'] = $cptions;
+                    
+                } else
+                    $form[$field->field_iden]['#options'] = drupal_map_assoc(explode(",", $field->field_option));
+                break;
+            case 'Check boxes':
+                 $form[$field->field_iden]['#options'] = drupal_map_assoc(explode(",", $field->field_option));
+                break;
+            case 'Textarea':
+                list($r, $c) = explode(",", $field->field_option);
+                if (!empty($r) && is_numeric($r))
+                    $form[$field->field_iden]['#rows']=$r;
+                if (!empty($c) && is_numeric($c))
+                    $form[$field->field_iden]['#cols']=$c;
+                break;             
+            
+            default:
+                # code...
+                break;
+        }
+
     }
     
 
@@ -227,14 +276,43 @@ function membership_form_user_register_form_alter(&$form, &$form_state, $form_id
 
 function membership_form_user_register_validate($form, &$form_state) {
     
-    $lname = $form_state["values"]["last_name"];
-    if(empty($lname))
-        form_set_error("last_name", t('You must enter your last name.'));
+     $query = db_select('jl_signupfields', 's');
+
+    $query
+        ->fields('s', array('field_id', 'field_label', 'field_iden'))
+        ->condition('actif_signup', 1, '=')
+        ->condition('required_field', 1, '=')
+        ->orderBy('field_iden', 'ASC');
+
+    $result = $query->execute();
+    foreach($result as $field) {
+        $val = $form_state["values"][$field->field_iden];
+        if(empty($val))
+            form_set_error($field->field_iden, t('%field is required', array("%field" => $field->field_label)));
+    }
 }
 
 function membership_form_user_register_submit($form, &$form_state) {
     $user = $form_state['user'];
     $uid = $user->uid;
+
+    $query = db_select('jl_signupfields', 's');
+
+    $query
+    ->fields('s', array('field_id', 'field_label', 'field_desc', 'field_iden', 'field_type', 'actif_signup','actif_profile','actif_order','field_weight'))
+     ->condition('actif_signup', 1, '=')
+    ->orderBy('field_weight', 'ASC');
+    
+    $result = $query->execute();
+
+    $fields_to_insert = array('uid' => $uid);
+    foreach($result as $field) {
+        $fields_to_insert[$field->field_iden] = $form_state["values"][$field->field_iden];
+    }
+    $fields_to_insert['created'] = time();
+    $fields_to_insert['updated'] = time();
+
+    $nid = db_insert('jl_user_infos')->fields($fields_to_insert)->execute();
 }
 
 /*

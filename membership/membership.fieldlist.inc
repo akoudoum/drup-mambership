@@ -19,12 +19,13 @@ function membership_admin_fieldslist() {
 	    'operation' => array('data' => t('Operation')),
 	    'up' => array('data' => t('MOve')),
 	    'down' => array('data' => t('Move')),
+      'required' => array('data' => t('Required')),
 	  	);
 	$options = array();
 	$query = db_select('jl_signupfields', 's');
 
 	$query
-    ->fields('s', array('field_id', 'field_label', 'field_iden', 'field_type', 'actif_signup','actif_profile','actif_order','field_weight'))
+    ->fields('s', array('field_id', 'field_label', 'field_iden', 'field_type', 'actif_signup','actif_profile','actif_order','field_weight', 'required_field'))
     ->orderBy('field_weight', 'ASC');
     
   	$result = $query->execute();
@@ -46,6 +47,7 @@ function membership_admin_fieldslist() {
   			'operation' => array('data' => array('#type' => 'link', '#title' => t('edit'), '#href' => "membership/$field->field_id/edit", '#options' => array('query' => $destination))),
   			'up' => array('data' => array('#type' => 'link', '#title' => t('up'), '#href' => "membership/movefield/$field->field_id/up/$field->field_weight", '#options' => array('query' => $destination))),
   			'down' => array('data' => array('#type' => 'link', '#title' => t('down'), '#href' => "membership/movefield/$field->field_id/down/$field->field_weight", '#options' => array('query' => $destination))),
+        'required' => array('data' => array('#type' => 'link', '#title' => $state[$field->required_field], '#href' => "membership/setrequired/$field->field_id/$field->required_field", '#options' => array('query' => $destination))),
   			);
   	}
   	//print_r($field_list);
@@ -68,4 +70,13 @@ function membership_admin_fieldslist() {
 }
 
 
+function membership_setrequired($field, $state) {
+  $num_updated = db_update('jl_signupfields') 
+        ->fields(array( 
+        'required_field' => ($state==0?1:0), 
+        )) 
+        ->condition('field_id', $field, '=') 
+        ->execute(); 
 
+  drupal_goto("admin/membersh");
+}
