@@ -44,19 +44,37 @@ function membership_menu() {
         "page arguments" => array("membership_admin_fieldslist"),
         "access arguments" =>  array("administer site configuration"),
         "file" => "membership.fieldlist.inc",
+    );
+
+    $items["admin/membership/membership"] = array(
+        "title" => "List of fields",
+        "description" => "Manage fields list",
+        "type" => MENU_DEFAULT_LOCAL_TASK,
+        "file" => "membership.fieldlist.inc",
+    );
+
+    $items["admin/membership/create"] = array(
+        "title" => "Add field",
+        "description" => "Add field on signup form",
+        "page callback" => "drupal_get_form",
+        "page arguments" => array("membership_admin_settings"),
+        "access arguments" =>  array("administer site configuration"),
+        "type" => MENU_LOCAL_TASK,
+        "file" => "membership.admin.inc",
 
     );
 
-    $items["membership/%signupfields/edit"] = array(
+    $items["admin/membership/field/%signupfields/edit"] = array(
         "title" => "Edit",
         'page callback' => 'drupal_get_form',
-        "page arguments" => array("membership_signupfields_edit", 1),
+        "page arguments" => array("membership_signupfields_edit", 3),
         "description" => "Manage fields list",
         "access arguments" =>  array("administer site configuration"),
-        "type" => MENU_LOCAL_TASK,
+        "type" => MENU_CALLBACK,
         "file" => "membership.editfield.inc",
 
     );
+
     //
     $items["membership/movefield/%/%/%"] = array(
         "title" => "Signup fields list",
@@ -64,7 +82,7 @@ function membership_menu() {
         "page callback" => "membership_movefield_ordering",
         "page arguments" => array(2, 3, 4),
         "access arguments" =>  array("administer site configuration"),
-        "type" => MENU_LOCAL_TASK,
+        "type" => MENU_CALLBACK,
         "file" => "membership.fieldlist.inc",
 
     );
@@ -75,7 +93,7 @@ function membership_menu() {
         "page callback" => "membership_setrequired",
         "page arguments" => array(2,3),
         "access arguments" =>  array("administer site configuration"),
-        "type" => MENU_LOCAL_TASK,
+        "type" => MENU_CALLBACK,
         "file" => "membership.fieldlist.inc",
 
     );
@@ -86,7 +104,7 @@ function membership_menu() {
         "page callback" => "membership_field_activation",
         "page arguments" => array(2, 3, 4),
         "access arguments" =>  array("administer site configuration"),
-        "type" => MENU_LOCAL_TASK,
+        "type" => MENU_CALLBACK,
         "file" => "membership.fieldlist.inc",
 
     );
@@ -114,7 +132,7 @@ function signupfields_load($fid) {
     //$result = db_query("SELECT * FROM {jl_signupfields} WHERE field_id = :field_id", array( ':field_id' => $fid ));
     $query 
     ->condition('field_id', $fid)
-    ->fields('f', array('field_id', 'field_label', 'field_iden', 'field_type', 'actif_signup','actif_profile','actif_order')); 
+    ->fields('f', array('field_id', 'field_label', 'field_iden', 'field_type', 'field_option', 'field_desc', 'actif_signup','actif_profile','actif_order','field_weight', 'required_field')); 
     $result = $query->execute(); 
 
     foreach ($result as $row) { 
@@ -175,7 +193,7 @@ function membership_movefield_ordering($field, $direction, $w) {
             ->execute();    
     }
 
-    drupal_goto("admin/membersh");
+    drupal_goto("admin/membership");
 }
 /**
  * Implement hook_form_alter()
@@ -201,7 +219,7 @@ function membership_form_user_register_form_alter(&$form, &$form_state, $form_id
     $query = db_select('jl_signupfields', 's');
 
     $query
-    ->fields('s', array('field_id', 'field_label', 'field_desc', 'field_iden', 'field_type', 'actif_signup','actif_profile','actif_order','field_weight'))
+    ->fields('s', array('field_id', 'field_label', 'field_desc', 'field_iden', 'field_type', 'actif_signup','actif_profile','actif_order','field_weight','field_option'))
      ->condition('actif_signup', 1, '=')
     ->orderBy('field_weight', 'ASC');
     
@@ -221,6 +239,7 @@ function membership_form_user_register_form_alter(&$form, &$form_state, $form_id
                 break;
              case 'Radio button':
                 $form[$field->field_iden]['#options'] = drupal_map_assoc(explode(",", $field->field_option));
+                $form[$field->field_iden]['#default_value'] = explode(",", $field->field_option)[0];
                 break;
             case 'Dropdown Select':
                 if($field->field_iden == 'country') {

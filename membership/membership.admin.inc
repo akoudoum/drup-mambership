@@ -215,8 +215,9 @@ function membership_admin_settings_submit($form, &$form_state) {
 		      'field_desc' => $field_description,
 		      'field_option' => $form_state["field_option"],
 		      'actif_signup' => 1,
-		      'actif_profile' => 0,
-		      'actif_order' => 0,
+		      'actif_profile' => 1,
+		      'actif_order' => 1,
+		      'required_field' => 1,
 		      'created' => time(),
 		      'updated' => time(),
 		    ))->execute();
@@ -224,7 +225,7 @@ function membership_admin_settings_submit($form, &$form_state) {
 	    ->fields(array( 'field_weight' => $nid, )) 
 	    ->condition('field_id', $nid, '=') 
 	    ->execute();
-
+	drupal_goto("admin/membership");
 
 }
 
@@ -237,6 +238,11 @@ function membership_admin_settings_validate($form, &$form_state) {
 	$field_label_name = $form_state['values']['field_label_name'];
 	$field_id_name = $form_state['values']['field_id_name'];
 	$field_type = $form_state['values']['field_type'];
+
+	
+    $nbr_records = db_query("SELECT count(field_id) FROM {jl_signupfields} WHERE field_iden = :field_iden", array(":field_iden" => $field_id_name))->fetchField();
+    if($nbr_records > 0)
+		form_set_error("field_id_name", t("The field ID %name already exists", array("%name" => $field_id_name)));
 
 	if(empty($field_label_name))
 		form_set_error("field_label_name", t("The label name is required"));

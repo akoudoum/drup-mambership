@@ -26,10 +26,11 @@ function membership_signupfields_edit($form, &$form_state, $fields) {
 	//
 	$form['field_id_name'] = array(
 		'#type' => "textfield",
-		'#title' => t("Field ID : "),
+		'#title' => t("Field ID (Not editable): "),
 		'#description' => t("Must contains only characters between [a-z] and [0-9] and start with a letter"),
 		'#size' => 30,
 		'#default_value' => $fields->field_iden,
+		'#disabled' => true,
 		);
 	//
 	$form['field_type_val'] = array(
@@ -41,6 +42,7 @@ function membership_signupfields_edit($form, &$form_state, $fields) {
 		'#title' => t("Field type : "),
 		'#description' => t("Select the field type"),
 		'#options' => drupal_map_assoc($form['field_type_val']['#value']),
+		'#default_value' => $fields->field_type
 		//'#required' => TRUE,
 		);
 
@@ -62,6 +64,7 @@ function membership_signupfields_edit($form, &$form_state, $fields) {
 				':input[name="field_type"]'	=> array('value' => t('Text field')),
 				),
 			),
+		'#default_value' => ($fields->field_type=='Text field' ? $fields->field_option:''),
 		);
 	/**radio button*/
 	$form['field_radio'] = array(
@@ -84,7 +87,7 @@ function membership_signupfields_edit($form, &$form_state, $fields) {
 				':input[name="field_type"]'	=> array('value' => t('Radio button')),
 				),
 			),
-		//'#required' => TRUE,
+		'#default_value' => ($fields->field_type=='Radio button' ? $fields->field_option:''),
 		);
 
 	/**Dropdown Select*/
@@ -108,7 +111,7 @@ function membership_signupfields_edit($form, &$form_state, $fields) {
 				':input[name="field_type"]'	=> array('value' => t('Dropdown Select')),
 				),
 			),
-		//'#required' => TRUE,
+		'#default_value' => ($fields->field_type=='Dropdown Select' ? $fields->field_option:''),
 		);
 
 	/**Check boxes*/
@@ -132,7 +135,7 @@ function membership_signupfields_edit($form, &$form_state, $fields) {
 				':input[name="field_type"]'	=> array('value' => t('Check boxes')),
 				),
 			),
-		//'#required' => TRUE,
+		'#default_value' => ($fields->field_type=='Check boxes' ? $fields->field_option:''),
 		);
 
 	/** Textarea field*/
@@ -153,6 +156,7 @@ function membership_signupfields_edit($form, &$form_state, $fields) {
 				':input[name="field_type"]'	=> array('value' => t('Textarea')),
 				),
 			),
+		'#default_value' => ($fields->field_type=='Textarea' ? explode(',',$fields->field_option)[0]:''),
 		);
 	$form['field_tarea']["cols"] = array(
 		'#type' => "textfield",
@@ -162,6 +166,7 @@ function membership_signupfields_edit($form, &$form_state, $fields) {
 				':input[name="field_type"]'	=> array('value' => t('Textarea')),
 				),
 			),
+		'#default_value' => ($fields->field_type=='Textarea' ? explode(',',$fields->field_option)[1]:''),
 		);
 	//
 	$form['field_description'] = array(
@@ -170,12 +175,13 @@ function membership_signupfields_edit($form, &$form_state, $fields) {
 		'#description' => t("Enter the a description for this field"),
 		'#rows' => 8,
 		'#cols' => 8,
-		'#resizable' => FALSE
+		'#resizable' => FALSE,
+		'#default_value' => $fields->field_desc,
 		);
 	
 	$form['submit'] = array( 
 		'#type' => 'submit', 
-		'#value' => t('Create field'), 
+		'#value' => t('Save changes'), 
 		);
 	
     $form['#submit'][] = 'membership_signupfields_edit_submit';
@@ -192,40 +198,17 @@ function membership_signupfields_edit_submit($form, &$form_state) {
 	$field_id_name = $form_state['values']['field_id_name'];
 	$field_type = $form_state['values']['field_type'];
 	$field_description = $form_state['values']['field_description'];
-	$field = array(
-		'type' => 'varchar',
-		'length' => "200",
-		'not null' => TRUE,
-		'default' => '',
-		'initial' => '', // Sets initial value for preexisting nodes.
-		'description' => $field_description,
-		);
-		// Create a regular index called 'marked' on the field named 'marked'.
-	/*$keys['indexes'] = array(
-		$field_id_name => array('')
-	);*/
-	$keys = array(); 
-	if(db_add_field('jl_user_infos', $field_id_name, $field, $keys)){
-		form_set_error("field_label_name", t("Sorry unable to create the field"));
-	} 
-	else
-		$nid = db_insert('jl_signupfields')->fields(array(
-		      'field_label' => $field_label_name,
-		      'field_iden' => $field_id_name,
-		      'field_type' => $field_type,
-		      'field_desc' => $field_description,
-		      'field_option' => $form_state["field_option"],
-		      'actif_signup' => 1,
-		      'actif_profile' => 0,
-		      'actif_order' => 0,
-		      'created' => time(),
-		      'updated' => time(),
-		    ))->execute();
-		db_update('jl_signupfields') 
-	    ->fields(array( 'field_weight' => $nid, )) 
-	    ->condition('field_id', $nid, '=') 
-	    ->execute();
 
+	$nid = db_update('jl_signupfields')->fields(array(
+	      'field_label' => $field_label_name,
+	      //'field_iden' => $field_id_name,
+	      'field_type' => $field_type,
+	      'field_desc' => $field_description,
+	      'field_option' => $form_state["field_option"],
+	      'updated' => time(),
+	    ))
+		->condition('field_iden', $field_id_name, '=') 
+		->execute();
 
 }
 
