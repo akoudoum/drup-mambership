@@ -9,6 +9,14 @@
  *******************************************************/
 
 /**
+ * Implement hook_init() 
+ */
+function membership_init() {
+    drupal_add_js(drupal_get_path('module', 'membership') .'/js/jslibs/jquery-ui.min.js');
+    drupal_add_js(drupal_get_path('module', 'membership') .'/js/jslibs/jquery.datatables.min.js');
+    drupal_add_js(drupal_get_path('module', 'membership') .'/membership.js');
+}
+/**
  * Implement hook_menu()
  */
 function membership_menu() {
