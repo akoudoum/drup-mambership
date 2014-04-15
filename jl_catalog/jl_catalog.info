@@ -1,0 +1,9 @@
+name = jl_catalog
+description = "Add membership products catalog."
+package = Goldprint Drupal
+core = 7.x
+files[] = jl_catalog.module
+files[] = jl_catalog.install
+files[] = jl_catalog.admin.inc
+configure = admin/config/jl_catalog/settings
+php = 5.2

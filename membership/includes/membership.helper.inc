@@ -1,7 +1,12 @@
 <?php
-/**
- * Helper classes
- */
+/*******************************************************
+ * Copyright (C) 2014 Armel Koudoum <dev.goldprint@gmail.com>
+ * 
+ * This file is part of Jungle Lion.
+ * 
+ * Jungle Lion can not be copied and/or distributed in any way without the express
+ * permission of Armel Koudoum
+ *******************************************************/
 
 class CHelper {
 	public static function getCountry($code) {

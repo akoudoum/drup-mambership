@@ -52,7 +52,7 @@ function membership_admin_fieldslist() {
                       'value' => array($field->field_weight), 
                       'style' => array('width:20px'),
                       'readonly' => array('readonly'),
-                      'name' => array('weight-'.$field->field_id),
+                      'name' => array('weight['.$field->field_id.']'),
                       ),
             '#disabled' => true,
           )
@@ -84,12 +84,29 @@ function membership_admin_fieldslist() {
 	    '#header' => $header,
 	    '#options' => $options,
 	    '#empty' => t('No field available.'),
+      '#prefix' => '<div class="messages warning listtable" style="display:none">'.t('You should submit to save your changes.').'</div>',
 	  	);
   	
-
+    $form['submit_btn'] =  array( 
+    '#type' => 'submit', 
+    '#value' => t('Save changes'), 
+    );
+    //$form["#validate"][] = "membership_admin_fieldslist_validate";
+    $form['#submit'][] = 'membership_admin_fieldslist_submit';
   	return $form;
 }
 
+function membership_admin_fieldslist_submit($form, &$form_state) {
+  $form_rows = $_POST['weight'];
+
+  foreach($form_rows as $key => $val) {
+      db_update('jl_signupfields') 
+        ->fields(array( 'field_weight' => $val, )) 
+        ->condition('field_id', $key, '=') 
+        ->execute();
+    }
+    drupal_set_message(t('The changes have been saved.'));
+}
 
 function membership_setrequired($field, $state) {
   $num_updated = db_update('jl_signupfields') 

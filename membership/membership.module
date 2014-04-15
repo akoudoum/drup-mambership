@@ -156,7 +156,7 @@ function location_state_load($state, $field, $loc) {
     die();
 }
 */
-function membership_field_activation($field, $state, $loc){
+function membership_field_activation($field, $state, $loc) {
     $num_updated = db_update('jl_signupfields') 
         ->fields(array( 
         'actif_'.$loc => ($state==0?1:0), 
@@ -287,7 +287,7 @@ function membership_form_user_register_form_alter(&$form, &$form_state, $form_id
     $form['name']["#weight"] = 4;
     $form['mail']["#weight"] = 3;
 
-
+/*
     $form['cpwd'] = array(
         "#type" => "password_confirm",
         "#title" => t("Your password"),
@@ -296,7 +296,7 @@ function membership_form_user_register_form_alter(&$form, &$form_state, $form_id
         "#weight" => 5,
     );
 
-
+*/
     return $form;
 }
 
@@ -342,6 +342,190 @@ function membership_form_user_register_submit($form, &$form_state) {
     $nid = db_insert('jl_user_infos')->fields($fields_to_insert)->execute();
 }
 
-/*
- [uid] => 11 [hostname] => 192.168.56.1 [roles] => Array ( [2] => authenticated user ) [cache] => 0 [administer_users] => [name] => ali [mail] => ali@ross.com [status] => [notify] => 0 [timezone] => America/New_York [signature] => [picture] => [picture_delete] => 0 [picture_upload] => [last_name] => koun [first_name] => alfa [cpwd] => gold1985 [signature_format] => filtered_html [pass] => $S$DKYf1qUUvMXWnptpTKQJ1ZQfOGh0po3VljkpLkJcZfpnixYqJiD. [init] => ali@ross.com [created] => 1396025313 [theme] => [access] => 0 [login] => 0 [language] => [password] => 829Wg9DudL
-*/
+
+function getuser_infos($uid) {
+    $query = db_select('jl_user_infos', 'u');
+    
+    $query 
+    ->condition('uid', $uid)
+    ->fields('u', array()); 
+    $result = $query->execute(); 
+    foreach($result as $row) {
+        if(isset($row->uid) && $row->uid == $uid)
+            return $row;
+    }
+
+    return null;
+}
+
+function membership_form_user_profile_form_alter (&$form, &$form_state, $form_id) {
+    //check to see if the form is the user profile form
+    if(!($form_id=="user_profile_form"))
+        return;
+    $user = $form_state['user'];
+    $user_ojb = getuser_infos($user->uid);
+    if($user==null)
+        return;
+
+    $query = db_select('jl_signupfields', 's');
+
+    $query
+    ->fields('s', array('field_id', 'field_label', 'field_desc', 'field_iden', 'field_type', 'actif_signup','actif_profile','actif_order','field_weight','field_option'))
+     ->condition('actif_profile', 1, '=')
+    ->orderBy('field_weight', 'ASC');
+    
+    $result = $query->execute();
+    $fieldtype = array('Text field' => "textfield", 'Radio button' => "radios", 'Dropdown Select' => "select", 'Check boxes' => "checkboxes", 'Textarea' => "textarea",);
+    //display form element
+    foreach($result as $field) {
+       $form[$field->field_iden] = array(
+            "#type" => $fieldtype[$field->field_type],
+            "#title" => $field->field_label,
+            "#description" => $field->field_desc,
+            "#weight" => $field->field_weight,
+        );  
+        switch ($field->field_type) {
+            case 'Text field':
+                if (!empty($field->field_option) && is_numeric($field->field_option))
+                    $form[$field->field_iden]['#maxlength']=$field->field_option;
+                    $form[$field->field_iden]['#default_value'] = (property_exists($user_ojb, $field->field_iden)?$user_ojb->{$field->field_iden}:'');
+                break;
+             case 'Radio button':
+                $form[$field->field_iden]['#options'] = drupal_map_assoc(explode(",", $field->field_option));
+                $form[$field->field_iden]['#default_value'] =(property_exists($user_ojb, $field->field_iden)?$user_ojb->{$field->field_iden}:'');
+                break;
+            case 'Dropdown Select':
+                if($field->field_iden == 'country') {
+                    $cptions = array();
+                    $q = db_select('jl_countries', 'c');
+                    $q->fields('c', array('name', 'iso_alpha3'))
+                        ->orderBy('name', 'ASC');
+                        
+                    $res = $q->execute();
+                    foreach($res as $r) 
+                        $cptions[$r->iso_alpha3] = $r->name;
+
+                    $form[$field->field_iden]['#options'] = $cptions;
+                    
+                } else
+                    $form[$field->field_iden]['#options'] = drupal_map_assoc(explode(",", $field->field_option));
+                    $form[$field->field_iden]['#default_value'] =(property_exists($user_ojb, $field->field_iden)?$user_ojb->{$field->field_iden}:'');
+                break;
+            case 'Check boxes':
+                 $form[$field->field_iden]['#options'] = drupal_map_assoc(explode(",", $field->field_option));
+                 $form[$field->field_iden]['#default_value'] =(property_exists($user_ojb, $field->field_iden)?$user_ojb->{$field->field_iden}:'');
+                break;
+            case 'Textarea':
+                list($r, $c) = explode(",", $field->field_option);
+                if (!empty($r) && is_numeric($r))
+                    $form[$field->field_iden]['#rows']=$r;
+                if (!empty($c) && is_numeric($c))
+                    $form[$field->field_iden]['#cols']=$c;
+                $form[$field->field_iden]['#default_value'] =(property_exists($user_ojb, $field->field_iden)?$user_ojb->{$field->field_iden}:'');
+                break;             
+            
+            default:
+                # code...
+                break;
+        }
+
+    }
+    $form["#validate"][] = "membership_form_user_profile_form_alter_validate";
+    $form['#submit'][] = 'membership_form_user_profile_form_alter_submit';
+    $form['current_pass']["#weight"] = 15;
+    $form['mail']["#weight"] = 3;
+    return $form;
+
+}
+
+function membership_form_user_profile_form_alter_validate($form, &$form_state) {
+     $query = db_select('jl_signupfields', 's');
+
+    $query
+        ->fields('s', array('field_id', 'field_label', 'field_iden'))
+        ->condition('actif_profile', 1, '=')
+        ->condition('required_field', 1, '=')
+        ->orderBy('field_iden', 'ASC');
+
+    $result = $query->execute();
+    foreach($result as $field) {
+        $val = $form_state["values"][$field->field_iden];
+        if(empty($val))
+            form_set_error($field->field_iden, t('%field is required', array("%field" => $field->field_label)));
+    }
+}
+function membership_form_user_profile_form_alter_submit($form, &$form_state) {
+    $user = $form_state['user'];
+    $uid = $user->uid;
+
+    $query = db_select('jl_signupfields', 's');
+
+    $query
+    ->fields('s', array('field_id', 'field_iden'))
+     ->condition('actif_profile', 1, '=')
+    ->orderBy('field_weight', 'ASC');
+    
+    $result = $query->execute();
+
+    $fields_to_insert = array('uid' => $uid);
+    foreach($result as $field) {
+        $fields_to_insert[$field->field_iden] = $form_state["values"][$field->field_iden];
+    }
+    $fields_to_insert['updated'] = time();
+
+
+    db_update('jl_user_infos')
+        ->fields($fields_to_insert)
+        ->condition('uid', $uid, '=')
+        ->execute();
+
+    //drupal_set_message(t('Changes have been saved.'));
+}
+
+/**
+ * Implement hook_user_view()
+ */
+function membership_user_view($account) {
+    
+    $query = db_select('jl_user_infos', 'u');
+    
+    $query 
+    ->condition('uid', $account->uid)
+    ->fields('u', array()); 
+    $result = $query->execute(); 
+
+    $field_query = db_select('jl_signupfields', 's');
+
+    $field_query
+    ->fields('s', array('field_id', 'field_label', 'field_iden', 'field_type', 'actif_signup','actif_profile','actif_order','field_weight', 'required_field'))
+    ->condition('actif_profile', 1, '=')
+    ->orderBy('field_weight', 'ASC');
+    
+    $field_result = $field_query->execute();
+    
+    foreach ($result as $row) { 
+        if(isset($row->uid) && $row->uid==$account->uid){
+            foreach ($field_result as $r) {
+            
+                if(property_exists($row, $r->field_iden)) {
+                    $account->content['summary']['profile_infos'.$r->field_iden] = array(
+                        '#type' => 'user_profile_item',
+                        '#title' => $r->field_label,
+                        '#markup' => $row->{$r->field_iden},
+                        );
+                    if( $r->field_iden == 'country' ) {
+                        module_load_include('inc', 'membership', 'includes/membership.helper');
+                        $account->content['summary']['profile_infos'.$r->field_iden]['#markup'] = CHelper::getCountyName($row->{$r->field_iden} ,'en');
+                    }
+                        
+                }
+            }
+
+        }
+    } 
+  
+}
+
+/**
+ * Alter user profile form
+ */

@@ -1,0 +1,57 @@
+<?php
+/*******************************************************
+ * Copyright (C) 2014 Armel Koudoum <dev.goldprint@gmail.com>
+ * 
+ * This file is part of Jungle Lion.
+ * 
+ * Jungle Lion can not be copied and/or distributed in any way without the express
+ * permission of Armel Koudoum
+ *******************************************************/
+
+/**
+ * Implement hook_init() 
+ */
+function jl_catalog_init() {
+    //drupal_add_js(drupal_get_path('module', 'membership') .'/js/jslibs/jquery-ui.min.js');
+    //drupal_add_js(drupal_get_path('module', 'membership') .'/js/jslibs/jquery.datatables.min.js');
+    ///drupal_add_js(drupal_get_path('module', 'membership') .'/membership.js');
+}
+/**
+ * Implement hook_menu()
+ */
+function jl_catalog_menu() {
+    /*
+    $items["admin/config/membership"] = array(
+        "title" => "Signup configuration form",
+        "title callback" => "membership_form_title",
+        "description" => "Configure member signup form",
+        "position" => "right",
+        "weight" => -5,
+        "page callback" => "system_admin_menu_block_page",
+        "access arguments" =>  array("administer site configuration"),
+        "file" => "system.admin.inc",
+        "file path" => drupal_get_path("module", "system"),
+    );
+
+    return $items;
+    */
+}
+
+
+/** 
+* Implements hook_node_info() to provide our Categorie type. 
+*/ 
+
+function jl_catalog_node_info() { 
+    return array( 
+        'jl_prod_category' => array( 
+            'name' => t('Product Categories'), 
+            'base' => 'jl_prod_category', 
+            'description' => t('Use this content type to save product categorie.'), 
+            'has_title' => TRUE, 
+            'title_label' => t('Category title'), 
+            'help' => t('Enter the title and description'), 
+        ), 
+    ); 
+}
+

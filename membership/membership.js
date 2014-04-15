@@ -1,14 +1,9 @@
 jQuery(document).ready(function(){
-		var startPosition;
-		var endPosition;
+
 		jQuery("#membership-admin-fieldslist .sticky-enabled.table-select-processed tbody").sortable({
     	cursor: "move",
-	    start:function(event, ui){
-	      startPosition = ui.item.prevAll().length + 1;
-	    },
 	    update: function(event, ui) {
-	      endPosition = ui.item.prevAll().length + 1;
-
+	    
 	      var i = 1;
 	      jQuery(this).find('tr').each(function(key, val){
 	      		
@@ -19,11 +14,11 @@ jQuery(document).ready(function(){
 	      		} else {
 	      			jQuery(this).removeClass('odd'); 
 	      			jQuery(this).addClass('even');
-	      		}
-	      		
+	      		}	
 
 	      		i++;
 	      });
+	      jQuery('.messages.warning.listtable').fadeIn('slow');
 	     }
 		});
 });

@@ -186,7 +186,7 @@ function membership_signupfields_edit($form, &$form_state, $fields) {
 	
     $form['#submit'][] = 'membership_signupfields_edit_submit';
     
-    return $form;//system_settings_form($form);    
+    return $form;    
 }
 
 /**
